@@ -13,21 +13,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-from model import GameRunner,Player
+import random
+
+from model import GameRunner, Player
 from iplayer import InteractivePlayer
 from naive_player import NaivePlayer
+from mcts_player import MCTSPlayer
 from utils import *
 
-players = [InteractivePlayer(0), NaivePlayer(1), NaivePlayer(2),NaivePlayer(3)]
+players = [NaivePlayer(0), MCTSPlayer(1)]
 
-gr = GameRunner(players, 1384754856864)
+gr = GameRunner(players, random.randint(0, 1000000))
 
 activity = gr.Run(True)
 
 print("Player 0 score is {}".format(activity[0][0]))
 print("Player 1 score is {}".format(activity[1][0]))
-print("Player 2 score is {}".format(activity[2][0]))
-print("Player 3 score is {}".format(activity[3][0]))
+if len(players) > 2:
+    print("Player 2 score is {}".format(activity[2][0]))
+if len(players) > 3:
+    print("Player 3 score is {}".format(activity[3][0]))
 
 
 #print("Player 0 round-by-round activity")
