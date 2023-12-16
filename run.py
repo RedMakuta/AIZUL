@@ -21,7 +21,7 @@ from naive_player import NaivePlayer
 from mcts_player import MCTSPlayer
 from utils import *
 
-players = [NaivePlayer(0), MCTSPlayer(1)]
+players = [MCTSPlayer(0, 10000), NaivePlayer(1)]
 
 gr = GameRunner(players, random.randint(0, 1000000))
 

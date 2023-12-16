@@ -31,14 +31,12 @@ class MonteCarloTreeSearchNode:
         self.children = []
         self.numberOfVisits = 0
         self.results = {1: 0, -1: 0, 0: 0}
-        self.untriedMoves = None
-        self.untriedMoves = self.possible_moves()
+        self.untriedMoves = self.possibleMoves()
         return
 
     # Gets the list of possible moves for this player at this state
-    def possible_moves(self):
-        self.untriedMoves = self.player.GetAvailableMoves(self.state)
-        return self.untriedMoves
+    def possibleMoves(self):
+        return self.player.GetAvailableMoves(self.state)
 
     def winLossRecord(self):
         wins = self.results[1]
@@ -52,18 +50,15 @@ class MonteCarloTreeSearchNode:
     def isRoundOver(self, gameState: GameState):
         return not gameState.TilesRemaining()
 
-    def isFullyExpanded(self):
-        return len(self.untriedMoves) == 0
-
-    # Uses UCB to select which child node is the most 'promising'
+    # Uses UCT (I think??) to select which child node is the most 'promising'
     def bestChild(self, explorationParameter=0.1):
         bestChild = None
         bestValue = float("-inf")
-        for c in self.children:
-            UCB = c.winLossRecord() + explorationParameter * math.sqrt(math.log(self.numberOfVisits) / c.numberOfVisits)
-            if UCB > bestValue:
-                bestChild = c
-                bestValue = UCB
+        for child in self.children:
+            value = (child.results[1]/child.numberOfVisits) + explorationParameter * math.sqrt(2 * math.log(self.numberOfVisits) / child.numberOfVisits)
+            if value > bestValue:
+                bestChild = child
+                bestValue = value
         return bestChild
 
     # Expansion
@@ -71,14 +66,14 @@ class MonteCarloTreeSearchNode:
         nextMove = self.untriedMoves.pop()
         nextGameState = copy.deepcopy(self.state)
         nextGameState.ExecuteMove(self.player.id, nextMove)
-        child_node = MonteCarloTreeSearchNode(nextGameState, nextGameState.players[1-self.player.id], parent=self, parentAction=nextMove)
-        self.children.append(child_node)
-        return child_node
+        childNode = MonteCarloTreeSearchNode(nextGameState, nextGameState.players[1-self.player.id], parent=self, parentAction=nextMove)
+        self.children.append(childNode)
+        return childNode
 
     def expansionPolicy(self):
         currentNode = self
         while not currentNode.isRoundOver(currentNode.state):
-            if not currentNode.isFullyExpanded():
+            if len(currentNode.untriedMoves) > 0:
                 return currentNode.expand()
             else:
                 currentNode = currentNode.bestChild()
@@ -89,8 +84,8 @@ class MonteCarloTreeSearchNode:
         simulatedState = copy.deepcopy(self.state)
         currentPlayer = self.player.id
         while not self.isRoundOver(simulatedState):
-            possible_moves = simulatedState.players[currentPlayer].GetAvailableMoves(simulatedState)
-            chosenMove = self.simulationPolicy(possible_moves, simulatedState)
+            possibleMoves = simulatedState.players[currentPlayer].GetAvailableMoves(simulatedState)
+            chosenMove = self.simulationPolicy(possibleMoves, simulatedState)
             simulatedState.ExecuteMove(currentPlayer, chosenMove)
             currentPlayer = 1 - currentPlayer
         # Calculate the scores to see who is winning, including end of game bonuses
