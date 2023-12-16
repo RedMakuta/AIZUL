@@ -1,7 +1,9 @@
-from model import Player, GameState, PlayerState, Tile
+from model import Player, GameState, PlayerState
+from naive_player import NaivePlayer
 import copy
 import math
 import random
+
 
 class MCTSPlayer(Player):
     def __init__(self, _id, numberOfSimulations=100):
@@ -15,7 +17,7 @@ class MCTSPlayer(Player):
         # Otherwise, use MCTS to select a move
         playerState = game_state.players[self.id]
         root = MonteCarloTreeSearchNode(game_state, playerState)
-        action = root.best_action(self.numberOfSimulations)
+        action = root.bestAction(self.numberOfSimulations)
         # 'action' is the child node that was selected by MCTS, so the move that got there is the move we want to return
         return action.parentAction
 
@@ -46,6 +48,24 @@ class MonteCarloTreeSearchNode:
     def numberOfVisits(self):
         return self.numberOfVisits
 
+    # Is the game over (rows filled), used for determining end of leaf node simulation
+    def isRoundOver(self, gameState: GameState):
+        return not gameState.TilesRemaining()
+
+    def isFullyExpanded(self):
+        return len(self.untriedMoves) == 0
+
+    # Uses UCB to select which child node is the most 'promising'
+    def bestChild(self, explorationParameter=0.1):
+        bestChild = None
+        bestValue = float("-inf")
+        for c in self.children:
+            UCB = c.winLossRecord() + explorationParameter * math.sqrt(math.log(self.numberOfVisits) / c.numberOfVisits)
+            if UCB > bestValue:
+                bestChild = c
+                bestValue = UCB
+        return bestChild
+
     # Expansion
     def expand(self):
         nextMove = self.untriedMoves.pop()
@@ -55,18 +75,22 @@ class MonteCarloTreeSearchNode:
         self.children.append(child_node)
         return child_node
 
-    # Is the game over (rows filled), used for determining end of leaf node simulation
-    def isRoundOver(self, gameState: GameState):
-        return not gameState.TilesRemaining()
+    def expansionPolicy(self):
+        currentNode = self
+        while not currentNode.isRoundOver(currentNode.state):
+            if not currentNode.isFullyExpanded():
+                return currentNode.expand()
+            else:
+                currentNode = currentNode.bestChild()
+        return currentNode
 
     # Simulation
     def simulate(self):
         simulatedState = copy.deepcopy(self.state)
         currentPlayer = self.player.id
-
         while not self.isRoundOver(simulatedState):
             possible_moves = simulatedState.players[currentPlayer].GetAvailableMoves(simulatedState)
-            chosenMove = self.simulationPolicy(possible_moves)
+            chosenMove = self.simulationPolicy(possible_moves, simulatedState)
             simulatedState.ExecuteMove(currentPlayer, chosenMove)
             currentPlayer = 1 - currentPlayer
         # Calculate the scores to see who is winning, including end of game bonuses
@@ -85,6 +109,14 @@ class MonteCarloTreeSearchNode:
         else:
             return 0
 
+    # What move to pick when simulating
+    def simulationPolicy(self, possible_moves, state: GameState):
+        # Option 1: Pick a random move
+        #return random.choice(possible_moves)
+        # Option 2: Use the Naive player logic (especially good since that's who we're playing against)
+        Naive = NaivePlayer(1)
+        return Naive.SelectMove(possible_moves, state)
+
     # Backpropagation
     def backpropagate(self, result):
         self.numberOfVisits += 1
@@ -92,35 +124,7 @@ class MonteCarloTreeSearchNode:
         if self.parent:
             self.parent.backpropagate(result)
 
-    def isFullyExpanded(self):
-        return len(self.untriedMoves) == 0
-
-    # Uses UCB to select which child node is the most 'promising'
-    def bestChild(self, explorationParameter=0.1):
-        bestChild = None
-        bestValue = float("-inf")
-        for c in self.children:
-            UCB = c.winLossRecord() + explorationParameter * math.sqrt(math.log(self.numberOfVisits) / c.numberOfVisits)
-            if UCB > bestValue:
-                bestChild = c
-                bestValue = UCB
-        return bestChild
-
-    # What move to pick when simulating
-    def simulationPolicy(self, possible_moves):
-        # For now, just pick a random move
-        return random.choice(possible_moves)
-
-    def expansionPolicy(self):
-        currentNode = self
-        while not currentNode.isRoundOver(currentNode.state):
-            if not currentNode.isFullyExpanded():
-                return currentNode.expand()
-            else:
-                currentNode = currentNode.bestChild()
-        return currentNode
-
-    def best_action(self, numberOfSimulations):
+    def bestAction(self, numberOfSimulations):
         for simCount in range(numberOfSimulations):
             nodeToSimulate = self.expansionPolicy()
             outcome = nodeToSimulate.simulate()

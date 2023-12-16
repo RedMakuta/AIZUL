@@ -10,7 +10,7 @@ MCTS_Scores = []
 Naive_Scores = []
 for i in range(numberOfIterations):
     print(f"Iteration {i}")
-    players = [MCTSPlayer(0), NaivePlayer(1)]
+    players = [MCTSPlayer(0, 200), NaivePlayer(1)]
     seed = random.randint(0, 1000000)
     gr = GameRunner(players, seed)
     activity = gr.Run(False)
