@@ -5,7 +5,7 @@ from naive_player import NaivePlayer
 from mcts_player import MCTSPlayer
 from utils import *
 
-numberOfIterations = 10
+numberOfIterations = 20
 MCTS_Scores = []
 Naive_Scores = []
 for i in range(numberOfIterations):
@@ -18,8 +18,8 @@ for i in range(numberOfIterations):
     MCTS_Scores.append(activity[0][0])
     Naive_Scores.append(activity[1][0])
 
-    #print("Player 0 score is {}".format(activity[0][0]))
-    #print("Player 1 score is {}".format(activity[1][0]))
+    print("Player 0 (MCTS) score is {}".format(activity[0][0]))
+    print("Player 1 (Naive) score is {}".format(activity[1][0]))
 print(f"Average MCTS score: {sum(MCTS_Scores)/numberOfIterations}")
 print(f"Average Naive score: {sum(Naive_Scores)/numberOfIterations}")
 print(MCTS_Scores)

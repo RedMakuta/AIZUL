@@ -38,11 +38,13 @@ class MonteCarloTreeSearchNode:
     def possibleMoves(self):
         return self.player.GetAvailableMoves(self.state)
 
+    # W - L
     def winLossRecord(self):
         wins = self.results[1]
         losses = self.results[-1]
         return wins - losses
 
+    # How many times this node has been expanded
     def numberOfVisits(self):
         return self.numberOfVisits
 
@@ -70,6 +72,7 @@ class MonteCarloTreeSearchNode:
         self.children.append(childNode)
         return childNode
 
+    # Expand nodes by their UCT(?) value first, until you reach a leaf
     def expansionPolicy(self):
         currentNode = self
         while not currentNode.isRoundOver(currentNode.state):
@@ -119,6 +122,7 @@ class MonteCarloTreeSearchNode:
         if self.parent:
             self.parent.backpropagate(result)
 
+    # Do a bunch of expansion and simulation and then pick the favorite node
     def bestAction(self, numberOfSimulations):
         for simCount in range(numberOfSimulations):
             nodeToSimulate = self.expansionPolicy()
